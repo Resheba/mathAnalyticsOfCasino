@@ -12,7 +12,9 @@ class Bet(BaseModel):
         super().__init__(*args, **kwargs)
 
         self.profit = self.site_gave - self.user_gave
-        self.is_won = True if self.site_gave else False
+        if self.user_gave:
+            self.is_won = True if self.site_gave else False
+        else: self.is_won = None
 
 
 class Lot(BaseModel):

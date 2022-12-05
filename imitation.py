@@ -18,34 +18,31 @@ driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()),  opt
 
 class DefaulfImmitation(BaseModel):
     alg: Any
-    winRate: List = []
+    bets: List[Bet] = []
     kredits: float = 100.0
-    underNull: int = 0
-    losses: int = 0
-    wins: int = 0
-    statistic: Dict = {'maxKredits': 0}
+    statistic: Dict = {'maxKredits': 0, 'wins': 0, 'losses': 0, 'underNull': 0, 'skipped': 0}
 
     def addBet(self, lot: Lot):
+        print('--\nKredits')
         ratio, user_gave = self.algReturn()
         site_gave = 0
+        if user_gave:
+            if ratio > lot.ratio:
+                self.kredits -= user_gave
+                self.checkNull()
+            else:
+                site_gave += user_gave * ratio 
+                self.kredits += user_gave * (ratio - 1)
+        else: print('SKIPPED')
 
-        if ratio > lot.ratio:
-            self.kredits -= user_gave
-            self.checkNull()
-            self.losses += 1
-        else:
-            site_gave += user_gave * ratio 
-            self.kredits += user_gave * (ratio - 1)
-            self.wins += 1
-        
         bet = Bet(site_gave = site_gave, user_gave = user_gave)
-        print('--\nKredits', self.kredits, '\n', bet.__dict__)
+        print(self.kredits, '\n', bet.__dict__)
 
-        self.winRate.append(bet)
+        self.bets.append(bet)
         self.collectStatic()
         
     def algReturn(self):
-        algBet = self.alg(self.kredits)
+        algBet = self.alg(self.kredits, self.bets)
         user_gave = algBet.get('user_gave')
         ratio = algBet.get('ratio')
 
@@ -53,14 +50,20 @@ class DefaulfImmitation(BaseModel):
 
     def checkNull(self):
         if self.kredits <= 0:
-            self.underNull += 1
+            self.statistic['underNull'] += 1
             self.kredits = 100
     
     def collectStatic(self):
-        self.statistic['maxKredits'] = max(self.statistic['maxKredits'], self.kredits)
+        if not self.bets: return
+        if self.bets[-1].user_gave:
+            self.statistic['maxKredits'] = max(self.statistic['maxKredits'], self.kredits)
+            if self.bets[-1].is_won: self.statistic['wins'] += 1
+            else: self.statistic['losses'] += 1
+        else:
+            self.statistic['skipped'] += 1
 
     def stop(self):
-        del self.winRate
+        del self.bets
         print(self.__dict__)
         del self
 
