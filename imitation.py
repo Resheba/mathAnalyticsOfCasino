@@ -1,6 +1,6 @@
 from json_api import getLot, getBets
 from pydantic import BaseModel 
-from typing import Optional, List, Any 
+from typing import Optional, List, Any, Dict
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
@@ -23,6 +23,7 @@ class DefaulfImmitation(BaseModel):
     underNull: int = 0
     losses: int = 0
     wins: int = 0
+    statistic: Dict = {'maxKredits': 0}
 
     def addBet(self, lot: Lot):
         ratio, user_gave = self.algReturn()
@@ -39,7 +40,9 @@ class DefaulfImmitation(BaseModel):
         
         bet = Bet(site_gave = site_gave, user_gave = user_gave)
         print('--\nKredits', self.kredits, '\n', bet.__dict__)
+
         self.winRate.append(bet)
+        self.collectStatic()
         
     def algReturn(self):
         algBet = self.alg(self.kredits)
@@ -52,6 +55,9 @@ class DefaulfImmitation(BaseModel):
         if self.kredits <= 0:
             self.underNull += 1
             self.kredits = 100
+    
+    def collectStatic(self):
+        self.statistic['maxKredits'] = max(self.statistic['maxKredits'], self.kredits)
 
     def stop(self):
         del self.winRate
