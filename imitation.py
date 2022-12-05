@@ -25,9 +25,7 @@ class DefaulfImmitation(BaseModel):
     wins: int = 0
 
     def addBet(self, lot: Lot):
-        algBet = self.alg(self.kredits)
-        user_gave = algBet.get('user_gave')
-        ratio = algBet.get('ratio')
+        ratio, user_gave = self.algReturn()
         site_gave = 0
 
         if ratio > lot.ratio:
@@ -35,18 +33,25 @@ class DefaulfImmitation(BaseModel):
             self.checkNull()
             self.losses += 1
         else:
-            site_gave += user_gave * ratio
-            self.kredits += site_gave
+            site_gave += user_gave * ratio 
+            self.kredits += user_gave * (ratio - 1)
             self.wins += 1
         
         bet = Bet(site_gave = site_gave, user_gave = user_gave)
-        print('DI', bet.profit)
+        print('--\nKredits', self.kredits, '\n', bet.__dict__)
         self.winRate.append(bet)
         
-    
+    def algReturn(self):
+        algBet = self.alg(self.kredits)
+        user_gave = algBet.get('user_gave')
+        ratio = algBet.get('ratio')
+
+        return ratio, user_gave
+
     def checkNull(self):
         if self.kredits <= 0:
             self.underNull += 1
+            self.kredits = 100
 
     def stop(self):
         del self.winRate
@@ -75,4 +80,4 @@ def startImmitation(model, range:List):
 
 model = DefaulfImmitation(alg = simpleAlg)
 
-startImmitation(model, range(3320000, 3320101))
+startImmitation(model, range(3320100, 3320201))
